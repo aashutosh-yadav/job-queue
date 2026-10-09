@@ -22,7 +22,7 @@ func LogSuccess(cur_task task.Task) {
 		payload_str = []byte{}
 	}
 
-	text := "\n SUCCESS: Task tupe : " + cur_task.Type + " Task Payload: " + string(payload_str) + " Retries left: " + fmt.Sprint("%d", cur_task.Retries)
+	text := "\n SUCCESS: Task type: " + cur_task.Type + " Task Payload: " + string(payload_str) + " Retries left: " + fmt.Sprint(cur_task.Retries) + "\n"
 
 	if _, err := f.WriteString(text); err != nil {
 		log.Fatal("Error writing to the log file: ", err)
@@ -45,7 +45,7 @@ func LogFailure(cur_task task.Task, curr_err error) {
 		payload_str = []byte{}
 	}
 
-	text := "FAILURE: Task type: " + cur_task.Type + " Task payload: " + string(payload_str) + " Retries left: " + fmt.Sprintf("%d", cur_task.Retries) + "Error message: " + curr_err.Error()
+	text := "FAILURE: Task type: " + cur_task.Type + " Task payload: " + string(payload_str) + " Retries left: " + fmt.Sprintf("%d", cur_task.Retries) + " Error message: " + curr_err.Error() + "\n"
 
 	if _, err := f.WriteString(text); err != nil {
 		log.Fatal("Error writing to the log file: ", err)
