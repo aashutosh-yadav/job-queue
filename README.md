@@ -1,4 +1,4 @@
-TThe project has two HTTP endpoints, one per service:
+The project has two HTTP endpoints, one per service:
 
 1.POST /enqueue — in cmd/producer/main.go
 Validates the incoming task and RPUSHes it onto the Redis task_queue.
