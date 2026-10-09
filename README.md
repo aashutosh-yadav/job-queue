@@ -80,4 +80,3 @@ request, gets placed into a Redis queue, and is then executed by workers.
 2. **GET /metrics** — in `cmd/worker/main.go`
    Returns the worker's counters (`jobs_done` / `jobs_failed` / `total_jobs_in_queue`).
 
-The detailed architecture (with Mermaid diagrams) is in the `architecture.md` file.
