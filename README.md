@@ -1,6 +1,6 @@
 # Job Queue
 
-A simple job queue project that shows how a job comes in through an HTTP
+A simple job queue that shows how a job comes in through an HTTP
 request, gets placed into a Redis queue, and is then executed by workers.
 
 ## Architecture
