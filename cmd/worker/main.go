@@ -1,12 +1,12 @@
 package main
 
 import (
-	"job-queue/internal/logger"
-	"job-queue/internal/task"
-	"job-queue/internal/worker"
 	"context"
 	"encoding/json"
 	"fmt"
+	"job-queue/internal/logger"
+	"job-queue/internal/task"
+	"job-queue/internal/worker"
 	"log"
 	"net/http"
 	"os"
