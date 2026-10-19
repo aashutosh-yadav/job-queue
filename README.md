@@ -192,5 +192,3 @@ again, then is dropped (dead-letter).
 - `log.txt` is written to the **current working directory**, so running from the
   repository root puts it at `./log.txt`.
 - To clear the Redis queue between runs: `redis-cli DEL task_queue`
-
-
