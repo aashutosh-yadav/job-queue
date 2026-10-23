@@ -8,7 +8,7 @@ import (
 
 func Process_Task(task_to_execute task.Task) error {
 	if task_to_execute.Payload == nil {
-		return fmt.Errorf("pauload is empty")
+		return fmt.Errorf("payload is empty")
 	}
 
 	// add you task type her , and perform the task under your switch case.
