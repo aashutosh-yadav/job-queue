@@ -1,4 +1,4 @@
-module message-queue
+module job-queue
 
 go 1.27.1
 

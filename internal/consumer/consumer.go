@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"message-queue/internal/queue"
+	"job-queue/internal/queue"
 )
 
 const maxAttempts = 2

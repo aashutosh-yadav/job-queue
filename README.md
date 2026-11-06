@@ -1,19 +1,19 @@
-# message-queue
+# job-queue
 
-A small message queue I built in Go to learn how producers, queues and consumers work together.
+A small distributed job queue I built in Go. The API and the workers run as separate processes and share one Redis instance.
 
-You send a job to an HTTP endpoint, it gets pushed into a Redis list, and a few goroutines pick jobs up from the other end and simulate the work in the background. Each job has a type (`send_email`, `resize_image`, or `generate_pdf`) and a single string payload.
+The API accepts a job and pushes it into a Redis list. The workers pick jobs up from the other end and simulate the work in the background. Each job has a type (`send_email`, `resize_image`, or `generate_pdf`) and a single string payload.
 
 ```mermaid
 flowchart LR
-    C[Client] -->|POST /jobs| H[HTTP handler]
-    H -->|LPUSH| Q[(job queue)]
-    Q -->|BLMOVE| W[Worker N]
+    C[Client] -->|POST /jobs| A[API]
+    A -->|LPUSH| Q[(job queue)]
+    Q -->|BLMOVE| W[Workers]
     W -->|ack: LREM| P[(job:processing)]
     W -->|fails twice| D[(job:dead)]
 ```
 
-The endpoint replies `202 Accepted` as soon as the job is in Redis, it doesn't wait for the processing to finish.
+The API replies `202 Accepted` as soon as the job is in Redis. It doesn't wait for a worker to process it.
 
 ## Job types
 
@@ -37,14 +37,17 @@ Start Redis:
 redis-server
 ```
 
-Then run the server:
+Then run the two services in separate terminals:
 
 ```bash
 go mod tidy
-go run ./cmd/server
+go run ./cmd/api      # terminal 1
+go run ./cmd/worker   # terminal 2
 ```
 
-It listens on `localhost:8080`. Send a single job like this:
+The API listens on `localhost:8080` by default. Both services read `REDIS_URL` (default `redis://localhost:6379/0`), and the API port can be changed with `PORT_API`. Start another `go run ./cmd/worker` if you want more workers.
+
+Send a single job like this:
 
 ```bash
 curl -X POST localhost:8080/jobs \
@@ -87,12 +90,13 @@ curl -i -X POST localhost:8080/jobs \
   -d '{"id":1,"type":"unknown","payload":"x"}'                          # 400
 ```
 
-You'll see the worker pick it up in the server logs and log the simulated work.
+You'll see a worker pick it up in its logs and log the simulated work.
 
 ## Project layout
 
 ```
-cmd/server        starts everything
+cmd/api           HTTP service
+cmd/worker        consumer service
 internal/producer the HTTP handler
 internal/queue    talks to Redis and defines Job
 internal/consumer the worker goroutines and simulated jobs
@@ -101,4 +105,6 @@ internal/consumer the worker goroutines and simulated jobs
 ## Known limitations
 
 This is a learning project, not something to run in production. The jobs are simulated. Delivery is at-least-once: if a process crashes after the work but before the ack, the same job can run again. If a worker crashes mid-job, the entry stays in `job:processing` — there is no recovery or reclaim yet.
+
+Redis is shared by both services and is a single point of failure.
 

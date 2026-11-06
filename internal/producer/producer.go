@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"message-queue/internal/queue"
+	"job-queue/internal/queue"
 )
 
 // Enqueue accepts a JSON job and adds it to the queue.
