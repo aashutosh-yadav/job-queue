@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// POST endpoint.
-	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/jobs", func(w http.ResponseWriter, r *http.Request) {
 		producer.Enqueue(w, r, q)
 	})
 

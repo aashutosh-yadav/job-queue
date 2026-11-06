@@ -8,10 +8,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// three redis list
-const queueKey = "message"
-const processingKey = "message:processing"
-const deadKey = "message:dead"
+// Three Redis lists: waiting, in-flight, and failed jobs.
+const queueKey = "job"
+const processingKey = "job:processing"
+const deadKey = "job:dead"
 
 type Queue struct {
 	rdb *redis.Client
@@ -22,63 +22,64 @@ func New(rdb *redis.Client) *Queue {
 	return &Queue{rdb: rdb}
 }
 
-// Enqueue adds a message to the left side of the list.
-func Enqueue(ctx context.Context, q *Queue, msg Message) error {
-	data, err := json.Marshal(msg)
+// Enqueue adds a job to the left side of the list.
+func Enqueue(ctx context.Context, q *Queue, job Job) error {
+	data, err := json.Marshal(job)
 	if err != nil {
 		return err
 	}
 	return q.rdb.LPush(ctx, queueKey, data).Err()
 }
 
-// Dequeue waits for a message and MOVES it to the processing list
-// (it is not deleted yet). It returns the message and its raw text,
+// Dequeue waits for a job and MOVES it to the processing list
+// (it is not deleted yet). It returns the job and its raw text,
 // which we need later for Ack and Dead.
-func Dequeue(ctx context.Context, q *Queue) (Message, string, error) {
+func Dequeue(ctx context.Context, q *Queue) (Job, string, error) {
 	raw, err := q.rdb.BLMove(ctx, queueKey, processingKey, "RIGHT", "LEFT", 0).Result()
 	if err != nil {
-		return Message{}, "", err
+		return Job{}, "", err
 	}
 
-	var msg Message
-	err = json.Unmarshal([]byte(raw), &msg)
+	var job Job
+	err = json.Unmarshal([]byte(raw), &job)
 	if err != nil {
-		// Broken message: put it in the dead list so it doesn't get stuck.
+		// Broken job: put it in the dead list so it doesn't get stuck.
 		Dead(ctx, q, raw)
 		Ack(ctx, q, raw)
-		return Message{}, "", err
+		return Job{}, "", err
 	}
 
-	return msg, raw, nil
+	return job, raw, nil
 }
 
-// Ack removes a finished message from the processing list.
+// Ack removes a finished job from the processing list.
 func Ack(ctx context.Context, q *Queue, raw string) error {
 	return q.rdb.LRem(ctx, processingKey, 1, raw).Err()
 }
 
-// Dead stores a message that failed every attempt.
+// Dead stores a job that failed every attempt.
 func Dead(ctx context.Context, q *Queue, raw string) error {
 	return q.rdb.LPush(ctx, deadKey, raw).Err()
 }
 
 func PrintQueue(ctx context.Context, q *Queue) error {
-	messages, err := q.rdb.LRange(ctx, queueKey, 0, -1).Result()
+	jobs, err := q.rdb.LRange(ctx, queueKey, 0, -1).Result()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("-----Current Redis Queue--------")
-	for i, data := range messages {
-		var msg Message
-		err := json.Unmarshal([]byte(data), &msg)
+	fmt.Println("-----Current Redis Job Queue--------")
+	for i, data := range jobs {
+		var job Job
+		err := json.Unmarshal([]byte(data), &job)
 		if err != nil {
-			fmt.Printf("Index %d: invalid message: %v\n", i, err)
+			fmt.Printf("Index %d: invalid job: %v\n", i, err)
 			continue
 		}
-		fmt.Printf("Index : %d | ID : %d | Message: %s\n", i, msg.ID, msg.Message)
+		fmt.Printf("Index : %d | ID : %d | Type: %s | Payload: %s\n",
+			i, job.ID, job.Type, job.Payload)
 	}
-	fmt.Println("---------------------------------")
+	fmt.Println("------------------------------------")
 
 	return nil
 }
